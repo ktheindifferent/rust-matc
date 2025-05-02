@@ -105,7 +105,7 @@ async fn main() -> Result<()> {
             clusters::defs::CLUSTER_LEVEL_CONTROL_ATTR_ID_CURRENTLEVEL,
         )
         .await?;
-    println!("{:?}", res);
+    log::debug!("{:?}", res);
 
     Ok(())
 }

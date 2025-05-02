@@ -107,7 +107,7 @@
 //!                              clusters::defs::CLUSTER_ID_LEVEL_CONTROL,
 //!                              clusters::defs::CLUSTER_LEVEL_CONTROL_ATTR_ID_CURRENTLEVEL,
 //!                              ).await?;
-//! println!("{:?}", result);
+//! log::debug!("{:?}", result);
 //! # Ok(())
 //! # }
 //! ```

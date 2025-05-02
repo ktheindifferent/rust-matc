@@ -188,12 +188,12 @@ fn commission(
             .commission(&connection, pin, device_id, controller_id)
             .await
             .unwrap();
-        println!("commissioning ok. now list supported clusters (endpoint 0):");
+        log::debug!("commissioning ok. now list supported clusters (endpoint 0):");
         let resptlv = con.read_request2(0, 0x1d, 1).await.unwrap();
         if let tlv::TlvItemValue::List(l) = resptlv {
             for c in l {
                 if let tlv::TlvItemValue::Int(v) = c.value {
-                    println!("{:?}", clusters::names::get_cluster_name(v as u32));
+                    log::debug!("{:?}", clusters::names::get_cluster_name(v as u32));
                 }
             }
         }
@@ -204,7 +204,7 @@ async fn progress(duration: Duration) {
     tokio::spawn(async move {
         let start_time = time::SystemTime::now();
         while start_time.elapsed().unwrap() < duration {
-            println!(
+            log::debug!(
                 "remaining time: {:.2}sec",
                 (duration - start_time.elapsed().unwrap()).as_secs_f32()
             );
@@ -224,14 +224,14 @@ fn discover_cmd(discover: DiscoverCommand, timeout: u64) {
             progress(time).await;
             let infos = discover::discover_commissionable(time).await.unwrap();
             for info in infos {
-                println!("{:#?}", info);
+                log::debug!("{:#?}", info);
             }
         }),
         DiscoverCommand::Commissioned {} => runtime.block_on(async {
             progress(time).await;
             let infos = discover::discover_commissioned(time).await.unwrap();
             for info in infos {
-                println!("{:#?}", info);
+                log::debug!("{:#?}", info);
             }
         }),
     }
@@ -377,8 +377,8 @@ fn command_cmd(
                     for c in l {
                         if let tlv::TlvItemValue::Int(v) = c.value {
                             match clusters::names::get_cluster_name(v as u32) {
-                                Some(v) => println!("{}", v),
-                                None => println!("unknown cluster - id 0x{:x}", v),
+                                Some(v) => log::debug!("{}", v),
+                                None => log::debug!("unknown cluster - id 0x{:x}", v),
                             }
                         }
                     }
@@ -392,8 +392,8 @@ fn command_cmd(
                         let v = r.get(&[1, 2]);
                         if let Some(tlv::TlvItemValue::Int(v)) = v {
                             match clusters::names::get_cluster_name(*v as u32) {
-                                Some(v) => println!("{}", v),
-                                None => println!("unknown cluster - id 0x{:x}", v),
+                                Some(v) => log::debug!("{}", v),
+                                None => log::debug!("unknown cluster - id 0x{:x}", v),
                             }
                         }
                     }
@@ -408,11 +408,11 @@ fn command_cmd(
                     )
                     .await
                     .unwrap();
-                println!("{:?}", resptlv);
+                log::debug!("{:?}", resptlv);
                 if let tlv::TlvItemValue::List(l) = resptlv {
                     for c in l {
                         if let tlv::TlvItemValue::Int(v) = c.value {
-                            println!("{}", v);
+                            log::debug!("{}", v);
                         }
                     }
                 }
@@ -489,8 +489,8 @@ fn main() {
                     for c in l {
                         if let tlv::TlvItemValue::Int(v) = c.value {
                             match clusters::names::get_cluster_name(v as u32) {
-                                Some(v) => println!("{}", v),
-                                None => println!("unknown cluster - id 0x{:x}", v),
+                                Some(v) => log::debug!("{}", v),
+                                None => log::debug!("unknown cluster - id 0x{:x}", v),
                             }
                         }
                     }
@@ -521,7 +521,7 @@ fn main() {
                 let resplist = response.tlv.get(&[1,0,1,2]).unwrap();
                 if let tlv::TlvItemValue::List(l) = resplist {
                     for c in l {
-                        println!("{:?}", matc::clusters::OperationalCredentialCluster::FabricDescriptorStruct::decode(c))
+                        log::debug!("{:?}", matc::clusters::OperationalCredentialCluster::FabricDescriptorStruct::decode(c))
                     }
                 }
             });
@@ -549,7 +549,7 @@ fn main() {
         }
         Commands::DecodeManualPairingCode { code } => {
             let res = onboarding::decode_manual_pairing_code(&code).unwrap();
-            println!(
+            log::debug!(
                 "discriminator: {}\npasscode: {}",
                 res.discriminator, res.passcode
             )

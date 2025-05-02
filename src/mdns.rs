@@ -93,7 +93,7 @@ pub struct DnsMessage {
 
 impl RR {
     pub fn dump(&self, indent: usize) {
-        println!(
+        log::debug!(
             "{} {} {}",
             " ".to_owned().repeat(indent),
             self.name,
@@ -104,7 +104,7 @@ impl RR {
 
 impl Query {
     pub fn dump(&self, indent: usize) {
-        println!(
+        log::debug!(
             "{} {} {}",
             " ".to_owned().repeat(indent),
             self.name,
@@ -115,20 +115,20 @@ impl Query {
 
 impl DnsMessage {
     pub fn dump(&self) {
-        println!("{:?} {} {:x}", self.source, self.transaction, self.flags);
-        println!("  queries:");
+        log::debug!("{:?} {} {:x}", self.source, self.transaction, self.flags);
+        log::debug!("  queries:");
         for queries in &self.queries {
             queries.dump(4);
         }
-        println!("  answers:");
+        log::debug!("  answers:");
         for answer in &self.answers {
             answer.dump(4);
         }
-        println!("  authority:");
+        log::debug!("  authority:");
         for authority in &self.authority {
             authority.dump(4);
         }
-        println!("  additional:");
+        log::debug!("  additional:");
         for additional in &self.additional {
             additional.dump(4);
         }

@@ -286,13 +286,13 @@ impl TlvItem {
     pub fn dump(&self, indent: usize) {
         match &self.value {
             TlvItemValue::List(vec) => {
-                println!("{} {}", " ".to_owned().repeat(indent), self.tag);
+                log::debug!("{} {}", " ".to_owned().repeat(indent), self.tag);
                 for v in vec {
                     v.dump(indent + 1);
                 }
             }
             _ => {
-                println!(
+                log::debug!(
                     "{} {} {:?}",
                     " ".to_owned().repeat(indent),
                     self.tag,

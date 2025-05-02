@@ -325,7 +325,7 @@ fn tag_test() {
     write_len(&mut buf, 3).unwrap();
     std::io::Write::write_all(&mut buf, "abc".as_bytes()).unwrap();
     let mut cursor = Cursor::new(buf.as_ref());
-    println!(
+    log::debug!(
         "{:?} {:?}",
         hex::encode(&buf),
         read_tag_s(&mut cursor).unwrap()
@@ -336,7 +336,7 @@ fn tag_test() {
     write_len(&mut buf, 3).unwrap();
     std::io::Write::write_all(&mut buf, "abc".as_bytes()).unwrap();
     let mut cursor = Cursor::new(buf.as_ref());
-    println!(
+    log::debug!(
         "{:?} {:?}",
         hex::encode(&buf),
         read_tag_s(&mut cursor).unwrap()
@@ -347,7 +347,7 @@ fn tag_test() {
     write_len(&mut buf, 3).unwrap();
     std::io::Write::write_all(&mut buf, "abc".as_bytes()).unwrap();
     let mut cursor = Cursor::new(buf.as_ref());
-    println!(
+    log::debug!(
         "{:?} {:?}",
         hex::encode(&buf),
         read_tag_s(&mut cursor).unwrap()
