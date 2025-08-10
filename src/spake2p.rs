@@ -137,3 +137,99 @@ impl Engine {
         Ok(Self { m, n })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_engine_creation() {
+        let engine = Engine::new();
+        assert!(engine.is_ok());
+    }
+
+    #[test]
+    fn test_p256_scalar_from_40_bytes() {
+        let bytes = [0u8; 40];
+        let scalar = Engine::p256_scalar_from_40_bytes(&bytes);
+        assert_eq!(scalar, p256::Scalar::ZERO);
+    }
+
+    #[test]
+    fn test_spake2p_start() {
+        let engine = Engine::new().unwrap();
+        let key = b"password";
+        let salt = b"salt1234567890";
+        let iterations = 1000;
+        
+        let context = engine.start(key, salt, iterations);
+        assert!(context.is_ok());
+        
+        let ctx = context.unwrap();
+        assert_eq!(ctx.x.len(), 65); // Uncompressed point
+        assert!(ctx.ca.is_none());
+        assert!(ctx.decrypt_key.is_none());
+        assert!(ctx.encrypt_key.is_none());
+    }
+
+    #[test]
+    fn test_append_to_tt() {
+        let mut buf = Vec::new();
+        let data = b"test data";
+        
+        let result = Engine::append_to_tt(&mut buf, data);
+        assert!(result.is_ok());
+        assert_eq!(buf.len(), 8 + data.len());
+        
+        // Check length encoding (little-endian)
+        let len_bytes = &buf[0..8];
+        let len = u64::from_le_bytes(len_bytes.try_into().unwrap());
+        assert_eq!(len, data.len() as u64);
+        
+        // Check data
+        assert_eq!(&buf[8..], data);
+    }
+
+    #[test]
+    fn test_encoded_point_conversions() {
+        // Test with generator point
+        let gen_point = p256::ProjectivePoint::GENERATOR.to_encoded_point(false);
+        
+        let affine = Engine::encoded_point_to_affine(&gen_point);
+        assert!(affine.is_ok());
+        
+        let projective = Engine::encoded_point_to_projective(&gen_point);
+        assert!(projective.is_ok());
+    }
+
+    #[test]
+    fn test_spake2p_full_flow() {
+        let engine = Engine::new().unwrap();
+        let key = b"test_password";
+        let salt = b"test_salt_1234567890";
+        let iterations = 1000;
+        let seed = b"test_seed";
+        
+        // Start the protocol
+        let mut context = engine.start(key, salt, iterations).unwrap();
+        
+        // Simulate receiving Y from peer (using a dummy value for testing)
+        // In real usage, this would come from the other party
+        let dummy_y = p256::ProjectivePoint::GENERATOR.to_encoded_point(false);
+        context.y = dummy_y;
+        
+        // Finish the protocol
+        let result = engine.finish(&mut context, seed);
+        assert!(result.is_ok());
+        
+        // Verify keys were generated
+        assert!(context.ca.is_some());
+        assert!(context.decrypt_key.is_some());
+        assert!(context.encrypt_key.is_some());
+        
+        // Verify key lengths
+        assert_eq!(context.ca.unwrap().len(), 32);
+        assert_eq!(context.decrypt_key.unwrap().len(), 16);
+        assert_eq!(context.encrypt_key.unwrap().len(), 16);
+    }
+}

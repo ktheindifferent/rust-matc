@@ -564,7 +564,12 @@ impl TlvItemEnc {
                     i.encode_internal(buf)?;
                 }
             }
-            TlvItemValueEnc::Invalid() => todo!(),
+            TlvItemValueEnc::Invalid() => {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "Cannot encode Invalid TLV item",
+                ));
+            }
         }
         Ok(())
     }
