@@ -96,3 +96,131 @@ impl Default for Session {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_session_creation() {
+        let session = Session::new();
+        assert_eq!(session.session_id, 0);
+        assert!(session.local_node.is_some());
+        assert!(session.remote_node.is_none());
+        assert!(session.encrypt_key.is_none());
+        assert!(session.decrypt_key.is_none());
+    }
+
+    #[test]
+    fn test_session_default() {
+        let session = Session::default();
+        assert_eq!(session.session_id, 0);
+        assert!(session.local_node.is_some());
+    }
+
+    #[test]
+    fn test_set_keys() {
+        let mut session = Session::new();
+        let key = [0x01u8; 16];
+        
+        session.set_encrypt_key(&key);
+        assert!(session.encrypt_key.is_some());
+        
+        session.set_decrypt_key(&key);
+        assert!(session.decrypt_key.is_some());
+    }
+
+    #[test]
+    fn test_make_nonce3() {
+        let session = Session::new();
+        let nonce = session.make_nonce3();
+        assert!(nonce.is_ok());
+        
+        let nonce_data = nonce.unwrap();
+        assert_eq!(nonce_data.len(), 13); // 1 + 4 + 8 bytes
+        assert_eq!(nonce_data[0], 0); // First byte should be 0
+    }
+
+    #[test]
+    fn test_make_nonce3_extern() {
+        let counter = 0x12345678u32;
+        let node = vec![0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08];
+        
+        let nonce = Session::make_nonce3_extern(counter, Some(&node));
+        assert!(nonce.is_ok());
+        
+        let nonce_data = nonce.unwrap();
+        assert_eq!(nonce_data.len(), 13);
+        assert_eq!(nonce_data[0], 0);
+        
+        // Check counter (little-endian)
+        let counter_bytes = &nonce_data[1..5];
+        let decoded_counter = u32::from_le_bytes(counter_bytes.try_into().unwrap());
+        assert_eq!(decoded_counter, counter);
+        
+        // Check node
+        assert_eq!(&nonce_data[5..], &node[..]);
+    }
+
+    #[test]
+    fn test_encode_message_unencrypted() {
+        let mut session = Session::new();
+        session.session_id = 123;
+        
+        let data = b"test message";
+        let encoded = session.encode_message(data);
+        assert!(encoded.is_ok());
+        
+        let encoded_data = encoded.unwrap();
+        assert!(encoded_data.len() > data.len());
+        assert!(encoded_data.ends_with(data));
+    }
+
+    #[test]
+    fn test_counter_increment() {
+        let mut session = Session::new();
+        let initial_counter = session.counter;
+        
+        let _ = session.encode_message(b"test");
+        assert_eq!(session.counter, initial_counter + 1);
+        
+        let _ = session.encode_message(b"test2");
+        assert_eq!(session.counter, initial_counter + 2);
+    }
+
+    #[test]
+    fn test_encode_decode_with_encryption() {
+        let mut session1 = Session::new();
+        let mut session2 = Session::new();
+        
+        // Set up symmetric keys (in real use, these would be derived from key exchange)
+        let encrypt_key = [0x01u8; 16];
+        let decrypt_key = [0x01u8; 16];
+        
+        session1.set_encrypt_key(&encrypt_key);
+        session2.set_decrypt_key(&decrypt_key);
+        
+        // Set matching node IDs
+        let node1 = vec![0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88];
+        let node2 = vec![0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11];
+        session1.local_node = Some(node1.clone());
+        session1.remote_node = Some(node2.clone());
+        session2.local_node = Some(node2);
+        session2.remote_node = Some(node1);
+        
+        // Sync counters for this test
+        session2.counter = session1.counter;
+        
+        let original_message = b"secret data";
+        let encoded = session1.encode_message(original_message).unwrap();
+        
+        // The encoded message should be different from original (encrypted)
+        assert!(!encoded.ends_with(original_message));
+        
+        let decoded = session2.decode_message(&encoded).unwrap();
+        
+        // Extract the payload from decoded message
+        let (_, payload) = messages::MessageHeader::decode(&decoded).unwrap();
+        assert_eq!(payload, original_message);
+    }
+}
